@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Comments</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fafafa;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    .comment-box { margin-bottom: 16px; }
+    textarea, input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+    button {
+      background: #1a73e8;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover { background: #1666c4; }
+    .comment { border-bottom: 1px solid #ddd; padding: 10px 0; }
+    .meta { font-size: 0.9em; color: #555; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <h2>Comments</h2>
+
+  <div class="comment-box">
+    <input id="name" placeholder="Your name (optional)" />
+    <textarea id="text" placeholder="Write a comment..."></textarea>
+    <button id="postBtn">Post Comment</button>
+  </div>
+
+  <div id="status"></div>
+  <div id="comments"></div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbzuLcp1krlbunJyg7S9N9rpvDZTHQx-ghIuWFFJL2fEFuYkMpoE6AWiBtJexeTUE14I/exec";
+    const PAGE_ID = "google-site-article"; // change per article
+
+    const nameEl = document.getElementById("name");
+    const textEl = document.getElementById("text");
+    const commentsEl = document.getElementById("comments");
+    const statusEl = document.getElementById("status");
+    const postBtn = document.getElementById("postBtn");
+
+    async function loadComments() {
+      statusEl.textContent = "Loading comments...";
+      try {
+        const res = await fetch(API_URL + "?page=" + PAGE_ID);
+        const data = await res.json();
+        renderComments(data);
+        statusEl.textContent = "";
+      } catch (e) {
+        console.error(e);
+        statusEl.textContent = "Error loading comments.";
+      }
+    }
+
+    async function postComment() {
+      const name = nameEl.value.trim() || "Anonymous";
+      const text = textEl.value.trim();
+      if (!text) return alert("Please enter a comment.");
+
+      postBtn.disabled = true;
+      postBtn.textContent = "Posting...";
+
+      try {
+        await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ page: PAGE_ID, name, comment: text })
+        });
+        textEl.value = "";
+        await loadComments();
+      } catch (e) {
+        console.error(e);
+        alert("Failed to post comment.");
+      } finally {
+        postBtn.disabled = false;
+        postBtn.textContent = "Post Comment";
+      }
+    }
+
+    function renderComments(list) {
+      if (!list.length) {
+        commentsEl.innerHTML = "<p>No comments yet.</p>";
+        return;
+      }
+      commentsEl.innerHTML = list.reverse().map(c => `
+        <div class="comment">
+          <div class="meta"><b>${c.name}</b> — ${new Date(c.timestamp).toLocaleString()}</div>
+          <div>${c.comment}</div>
+        </div>
+      `).join("");
+    }
+
+    postBtn.addEventListener("click", postComment);
+    loadComments();
+  </script>
+</body>
+</html>

@@ -12,6 +12,7 @@
       max-width: 600px;
       margin: auto;
     }
+    h2 { text-align: center; }
     .comment-box { margin-bottom: 16px; }
     textarea, input {
       width: 100%;
@@ -49,13 +50,13 @@
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbydxUrJcKO3DmLbY48hl4O9MLWZz77--ZsUOLhqiR3YU9tD45PjiXa3poYRTgSGwpUK/exec";
-    const PAGE_ID = "google-site-article"; // change per article
+    const PAGE_ID = "article1"; // change for each page
 
     const nameEl = document.getElementById("name");
     const textEl = document.getElementById("text");
+    const postBtn = document.getElementById("postBtn");
     const commentsEl = document.getElementById("comments");
     const statusEl = document.getElementById("status");
-    const postBtn = document.getElementById("postBtn");
 
     async function loadComments() {
       statusEl.textContent = "Loading comments...";
@@ -64,9 +65,9 @@
         const data = await res.json();
         renderComments(data);
         statusEl.textContent = "";
-      } catch (e) {
-        console.error(e);
-        statusEl.textContent = "Error loading comments.";
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = "⚠️ Could not load comments.";
       }
     }
 
@@ -79,16 +80,21 @@
       postBtn.textContent = "Posting...";
 
       try {
-        await fetch(API_URL, {
+        const response = await fetch(API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ page: PAGE_ID, name, comment: text })
         });
+
+        if (!response.ok) throw new Error("Server error");
+        const result = await response.json();
+        if (result.status !== "success") throw new Error("Failed");
+
         textEl.value = "";
         await loadComments();
-      } catch (e) {
-        console.error(e);
-        alert("Failed to post comment.");
+      } catch (err) {
+        console.error("POST failed:", err);
+        alert("Failed to post comment. Check console for details.");
       } finally {
         postBtn.disabled = false;
         postBtn.textContent = "Post Comment";
